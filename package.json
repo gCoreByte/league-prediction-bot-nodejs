@@ -1,0 +1,26 @@
+{
+  "name": "league-prediction-bot-nodejs",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gCoreByte/league-prediction-bot-nodejs.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/gCoreByte/league-prediction-bot-nodejs/issues"
+  },
+  "homepage": "https://github.com/gCoreByte/league-prediction-bot-nodejs#readme",
+  "dependencies": {
+    "axios": "~0.27.2",
+    "express": "~4.18.1",
+    "yaml": "~2.1.1",
+    "typescript": "~4.8.2"
+  }
+}
