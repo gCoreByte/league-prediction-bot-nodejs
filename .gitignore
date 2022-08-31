@@ -108,3 +108,6 @@ dist
 
 # Package-lock.json
 package-lock.json
+
+# dev config
+config/development.yaml
