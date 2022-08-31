@@ -63,10 +63,10 @@ export interface CurrentGameInfo {
     gameLength: number,
     platformId: string,
     gameMode: string,
-    bannedChampions: [BannedChampion],
+    bannedChampions: BannedChampion[],
     gameQueueConfigId: number,
     observers: Observer,
-    participants: [CurrentGameParticipant]
+    participants: CurrentGameParticipant[]
 }
 
 interface BannedChampion {
@@ -89,7 +89,7 @@ interface CurrentGameParticipant {
     summonerId: string,
     spell1Id: string,
     spell2Id: string,
-    gameCustomizationObjects: [GameCustomizationObject]
+    gameCustomizationObjects: GameCustomizationObject[]
 }
 
 interface Perks {
@@ -114,6 +114,7 @@ export class LeagueApi {
     private summoner!: SummonerDTO;
     // Riot API key
     private leagueApiKey!: string;
+    current_game_id!: number;
 
     constructor() { }
 
@@ -162,7 +163,7 @@ export class LeagueApi {
      */
     async getSummoner(): Promise<SummonerDTO> {
         try {
-            let res = await axios.get<SummonerDTO>(createBaseURL + `/lol/summoner/v4/summoners/by-name/${this.displayname}`, {
+            let res = await axios.get<SummonerDTO>(createBaseURL(this.server) + `/lol/summoner/v4/summoners/by-name/${this.displayname}`, {
                 headers: this.riotHeader()
             });
             return res.data;
@@ -175,7 +176,6 @@ export class LeagueApi {
             }
             const error = err as AxiosError;
             if (error.response) {
-                debugger;
                 if (error.response!.status === 401) {
                     throw new Error("Your API key has expired.");
                 }
@@ -194,14 +194,15 @@ export class LeagueApi {
 
     /**
      * Gets the current game of the user
-     * @returns Promise<CurrentGameInfo>
+     * @returns Promise<CurrentGameInfo | null>
      */
-    async getCurrentGame(): Promise<CurrentGameInfo> {
+    async getCurrentGame(): Promise<CurrentGameInfo | null> {
         let id: EncryptedId = this.summoner.id;
         try {
-            let res = await axios.get<CurrentGameInfo>(createBaseURL + `/lol/spectator/v4/active-games/by-summoner/${id}`, {
+            let res = await axios.get<CurrentGameInfo>(createBaseURL(this.server) + `/lol/spectator/v4/active-games/by-summoner/${id}`, {
                 headers: this.riotHeader()
             });
+            this.current_game_id = res.data.gameId;
             return res.data;
         } catch (err) {
             // TODO: better error handling
@@ -211,12 +212,53 @@ export class LeagueApi {
             }
             const error = err as AxiosError;
             if (error.response) {
-                debugger;
                 if (error.response!.status === 401) {
                     throw new Error("Your API key has expired.");
                 }
                 if (error.response!.status === 404) {
-                    throw new Error(`${this.displayname} is not in a game.`);
+                    console.error(`${this.displayname} is not in a game.`);
+                    return null;
+                }
+                if ([500, 502, 503, 504].includes(error.response!.status)) {
+                    throw new Error("Riot-side API issue. Try again in a while.");
+                }
+                throw new Error(`Error code: ${error.response!.status}. Something went wrong.`);
+            } else {
+                throw new Error("Something went wrong. Try checking your connection.");
+            }
+        }
+    }
+
+    // TODO: this is really REALLY ugly. someone fix this please
+    async isWinner(): Promise<boolean> {
+        try {
+            let res = await axios.get(createBaseURL(this.server) + "/lol/match/v5/matches/" + this.current_game_id, {
+                headers: this.riotHeader()
+            });
+            let participants = res.data.participants;
+            let teams = res.data.teams;
+            let winner: string = "";
+            for (const team of teams) {
+                if (team.win) {
+                    winner = team.teamId;
+                }
+            }
+            for (const participant of participants) {
+                if (participant.summonerName === this.displayname) {
+                    return participant.teamId === winner;
+                }
+            }
+            return true;
+        } catch (err) {
+            // TODO: better error handling
+            if (!axios.isAxiosError(err)) {
+                console.error('Something went wrong. Error dumped.');
+                throw err;
+            }
+            const error = err as AxiosError;
+            if (error.response) {
+                if (error.response!.status === 401) {
+                    throw new Error("Your API key has expired.");
                 }
                 if ([500, 502, 503, 504].includes(error.response!.status)) {
                     throw new Error("Riot-side API issue. Try again in a while.");

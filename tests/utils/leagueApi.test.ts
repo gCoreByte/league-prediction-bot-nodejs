@@ -112,11 +112,6 @@ describe('LeagueApi', () => {
       mockedAxios.isAxiosError.mockReturnValueOnce(true);
       await expect(leagueApi.getCurrentGame()).rejects.toThrowError(new Error('Your API key has expired.'));
     });
-    it('returns 404', async () => {
-      mockedAxios.get.mockRejectedValueOnce({response: {status: 404}});
-      mockedAxios.isAxiosError.mockReturnValueOnce(true);
-      await expect(leagueApi.getCurrentGame()).rejects.toThrowError(new Error('gCoreByte is not in a game.'));
-    });
     it('returns 500, 502, 503, 504', async () => {
       mockedAxios.get.mockRejectedValueOnce({response: {status: 500}})
           .mockRejectedValueOnce({response: {status: 502}})
