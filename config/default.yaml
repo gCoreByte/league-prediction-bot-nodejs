@@ -6,5 +6,6 @@ league:
   api_key: ""
 
 twitch:
-  channel_name: ""
-  auth_key: ""
+  broadcaster_name: ""
+  token: ""
+  client_id: ""
