@@ -1,21 +1,20 @@
 /**
  * Main exported class
  */
-import axios, { Axios, AxiosError, AxiosRequestHeaders } from "axios";
-import { ExitStatus } from "typescript";
+import axios, { AxiosError, AxiosRequestHeaders } from "axios";
 
-type ServerHeaders = {
-    eune: ServerURLString,
-    br: ServerURLString,
-    euw: ServerURLString,
-    jp: ServerURLString,
-    kr: ServerURLString,
-    la: ServerURLString,
-    na: ServerURLString,
-    oce: ServerURLString,
-    ru: ServerURLString,
-    tr: ServerURLString
-};
+// type ServerHeaders = {
+//     eune: ServerURLString,
+//     br: ServerURLString,
+//     euw: ServerURLString,
+//     jp: ServerURLString,
+//     kr: ServerURLString,
+//     la: ServerURLString,
+//     na: ServerURLString,
+//     oce: ServerURLString,
+//     ru: ServerURLString,
+//     tr: ServerURLString
+// };
 
 const ServerHeaders = {
     eune: 'eun1',
@@ -46,7 +45,7 @@ function createBaseURL(server: string) {
     return `https://${serverURLString}.api.riotgames.com`;
 }
 
-interface SummonerDTO {
+export interface SummonerDTO {
     accountId: string,
     profileIconId: number,
     revisionDate: number,
@@ -56,7 +55,7 @@ interface SummonerDTO {
     summonerLevel: number
 }
 
-interface CurrentGameInfo {
+export interface CurrentGameInfo {
     gameId: number,
     gameType: string,
     gameStartTime: number,
@@ -109,8 +108,8 @@ type EncryptedId = string;
 
 
 export class LeagueApi {
-    private displayname!: string;
-    private server!: string;
+    displayname!: string;
+    server!: string;
     // Summoner DTO
     private summoner!: SummonerDTO;
     // Riot API key
@@ -120,8 +119,9 @@ export class LeagueApi {
 
     /**
      * Async initializer
-     * @param username
+     * @param displayname
      * @param server
+     * @param leagueApiKey
      */
     async init(displayname: string, server: string, leagueApiKey: string) {
         this.displayname = displayname;
@@ -137,13 +137,13 @@ export class LeagueApi {
      */
     validatePresence() {
         if (this.displayname == "" || this.displayname == null) {
-            throw Error('Username cannot be empty.');
+            throw new Error('Display name cannot be empty.');
         }
         if (this.server == "" || this.server == null) {
-            throw Error('Server cannot be empty.');
+            throw new Error('Server cannot be empty.');
         }
         if (this.leagueApiKey == "" || this.leagueApiKey == null) {
-            throw Error('leagueApiKey cannot be empty.');
+            throw new Error('leagueApiKey cannot be empty.');
         }
     }
 
@@ -177,11 +177,14 @@ export class LeagueApi {
             if (error.response) {
                 // This should throw an error if the user does not exist.
                 // TODO: handle errors
-                throw err;
+                if (error.response!.status === 404) {
+                    throw new Error(`${this.displayname} was not found on ${this.server}.`);
+                }
+                throw new Error(`Error code: ${error.response!.status}. Something went wrong.`)
             } else {
                 console.error("Something went wrong.");
                 console.error("Try checking your connection.");
-                throw err;
+                throw error
             }
 
         }
