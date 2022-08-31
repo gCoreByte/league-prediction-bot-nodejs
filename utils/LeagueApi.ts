@@ -1,7 +1,7 @@
 /**
  * Main exported class
  */
-import axios, {Axios, AxiosError} from "axios";
+import axios, {Axios, AxiosError, AxiosRequestHeaders} from "axios";
 
 const ServerHeaders = {
     eune: 'eun1',
@@ -29,10 +29,60 @@ interface SummonerDTO {
     profileIconId: number,
     revisionDate: number,
     name: string,
-    id: string,
+    id: EncryptedId,
     puuid: string,
     summonerLevel: number
 }
+
+interface CurrentGameInfo {
+    gameId: number,
+    gameType: string,
+    gameStartTime: number,
+    mapId: number,
+    gameLength: number,
+    platformId: string,
+    gameMode: string,
+    bannedChampions: [BannedChampion],
+    gameQueueConfigId: number,
+    observers: Observer,
+    participants: [CurrentGameParticipant]
+}
+
+interface BannedChampion {
+    pickTurn: number,
+    championId: number,
+    teamId: number
+}
+
+interface Observer {
+    encryptionKey: string
+}
+
+interface CurrentGameParticipant {
+    championId: number,
+    perks: Perks,
+    profileIconId: number,
+    bot: boolean,
+    teamId: number,
+    summonerName: string,
+    summonerId: string,
+    spell1Id: string,
+    spell2Id: string,
+    gameCustomizationObjects: [GameCustomizationObject]
+}
+
+interface Perks {
+    perkIds: [number],
+    perkStyle: number,
+    perkSubStyle: number
+}
+
+interface GameCustomizationObject {
+    category: string,
+    content: string
+}
+
+type EncryptedId = string;
 
 
 
@@ -40,13 +90,12 @@ export class LeagueApi {
     private username: string;
     private server: string;
     // Encrypted summoner ID
-    private summonerId: string;
+    private summoner?: SummonerDTO;
     private leagueApiKey: string;
 
     constructor() {
         this.username = "";
         this.server = "";
-        this.summonerId = "";
         this.leagueApiKey = "";
     }
 
@@ -60,7 +109,7 @@ export class LeagueApi {
         this.server = server;
         this.leagueApiKey = leagueApiKey;
 
-        this.summonerId = await this.getSummonerId();
+        this.summoner = await this.getSummoner();
     }
 
     validatePresence() {
@@ -75,7 +124,7 @@ export class LeagueApi {
         }
     }
 
-    riotHeader() {
+    riotHeader(): AxiosRequestHeaders {
         return {
             "X-Riot-Token": this.leagueApiKey
         };
@@ -85,11 +134,12 @@ export class LeagueApi {
      * @param username
      * @param server
      */
-    async getSummonerId(username = this.username, server = this.server) {
+    async getSummoner(username = this.username, server = this.server) {
         try {
             let res = await axios.get<SummonerDTO>(`https://${getServerHeader(server)}`, {
                 headers: this.riotHeader()
             });
+            return res.data;
 
         } catch (err) {
             if (!axios.isAxiosError(err)) {
@@ -104,6 +154,10 @@ export class LeagueApi {
                 console.error("Try checking your connection.");
             }
         }
+    }
+
+    async getCurrentGame(id: EncryptedId) {
+
     }
 
 
