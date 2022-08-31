@@ -1,7 +1,21 @@
 /**
  * Main exported class
  */
-import axios, {Axios, AxiosError, AxiosRequestHeaders} from "axios";
+import axios, { Axios, AxiosError, AxiosRequestHeaders } from "axios";
+import { ExitStatus } from "typescript";
+
+type ServerHeaders = {
+    eune: ServerURLString,
+    br: ServerURLString,
+    euw: ServerURLString,
+    jp: ServerURLString,
+    kr: ServerURLString,
+    la: ServerURLString,
+    na: ServerURLString,
+    oce: ServerURLString,
+    ru: ServerURLString,
+    tr: ServerURLString
+};
 
 const ServerHeaders = {
     eune: 'eun1',
@@ -16,12 +30,20 @@ const ServerHeaders = {
     tr: 'tr1'
 } as const;
 
-function getServerHeader(server: string) {
-    server = server.toLowerCase().trim();
+type ServerString = keyof typeof ServerHeaders;
+type ServerURLString = string;
+
+function getServerHeader(server: ServerString) {
     if (server in ServerHeaders) {
-        return ServerHeaders[server as keyof typeof ServerHeaders] as string;
+        return ServerHeaders[server] as ServerURLString;
     }
     throw Error('Invalid server type.');
+}
+
+function createBaseURL(server: string) {
+    let server_string = server.trim().toLowerCase() as ServerString;
+    let serverURLString = getServerHeader(server_string);
+    return `https://${serverURLString}.api.riotgames.com`;
 }
 
 interface SummonerDTO {
@@ -87,33 +109,34 @@ type EncryptedId = string;
 
 
 export class LeagueApi {
-    private username: string;
-    private server: string;
-    // Encrypted summoner ID
-    private summoner?: SummonerDTO;
-    private leagueApiKey: string;
+    private displayname!: string;
+    private server!: string;
+    // Summoner DTO
+    private summoner!: SummonerDTO;
+    // Riot API key
+    private leagueApiKey!: string;
 
-    constructor() {
-        this.username = "";
-        this.server = "";
-        this.leagueApiKey = "";
-    }
+    constructor() { }
 
     /**
      * Async initializer
      * @param username
      * @param server
      */
-    async init(username: string, server: string, leagueApiKey: string) {
-        this.username = username;
+    async init(displayname: string, server: string, leagueApiKey: string) {
+        this.displayname = displayname;
         this.server = server;
         this.leagueApiKey = leagueApiKey;
 
+        this.validatePresence();
         this.summoner = await this.getSummoner();
     }
 
+    /**
+     * Validates the presence of all necessary variables
+     */
     validatePresence() {
-        if (this.username == "" || this.username == null) {
+        if (this.displayname == "" || this.displayname == null) {
             throw Error('Username cannot be empty.');
         }
         if (this.server == "" || this.server == null) {
@@ -124,6 +147,10 @@ export class LeagueApi {
         }
     }
 
+    /**
+     * Creates the auth header
+     * @returns AxiosRequestHeaders
+     */
     riotHeader(): AxiosRequestHeaders {
         return {
             "X-Riot-Token": this.leagueApiKey
@@ -131,33 +158,64 @@ export class LeagueApi {
     }
     /**
      * Gets the users encrypted summoner ID
-     * @param username
-     * @param server
+     * @returns Promise<SummonerDTO>
      */
-    async getSummoner(username = this.username, server = this.server) {
+    async getSummoner(): Promise<SummonerDTO> {
         try {
-            let res = await axios.get<SummonerDTO>(`https://${getServerHeader(server)}`, {
+            let res = await axios.get<SummonerDTO>(createBaseURL + `/lol/summoner/v4/summoners/by-name/${this.displayname}`, {
                 headers: this.riotHeader()
             });
             return res.data;
 
         } catch (err) {
+            // TODO: better error handling
             if (!axios.isAxiosError(err)) {
                 console.error('Something went wrong. Error dumped.');
-                console.error(err);
+                throw err;
             }
             const error = err as AxiosError;
             if (error.response) {
+                // This should throw an error if the user does not exist.
                 // TODO: handle errors
+                throw err;
             } else {
                 console.error("Something went wrong.");
                 console.error("Try checking your connection.");
+                throw err;
             }
+
         }
     }
 
-    async getCurrentGame(id: EncryptedId) {
-
+    /**
+     * Gets the current game of the user
+     * @returns Promise<CurrentGameInfo>
+     */
+    async getCurrentGame(): Promise<CurrentGameInfo> {
+        let id: EncryptedId = this.summoner.id;
+        try {
+            let res = await axios.get<CurrentGameInfo>(createBaseURL + `/lol/spectator/v4/active-games/by-summoner/${id}`, {
+                headers: this.riotHeader()
+            });
+            return res.data;
+        } catch (err) {
+            // TODO: better error handling
+            if (!axios.isAxiosError(err)) {
+                console.error('Something went wrong. Error dumped.');
+                console.error(err);
+                throw err;
+            }
+            const error = err as AxiosError;
+            if (error.response) {
+                // Handle 404 graciously -> User is not in a game
+                // TODO: handle errors
+                throw err;
+            } else {
+                console.error("Something went wrong.");
+                console.error("Try checking your connection.");
+                throw err;
+            }
+        }
     }
 
 
