@@ -32,7 +32,7 @@ const task = new AsyncTask(
     async () => { await main(); }
 )
 
-const job = new SimpleIntervalJob({ minutes: 2, runImmediately: true}, task);
+const job = new SimpleIntervalJob({ seconds: 10, runImmediately: true}, task);
 scheduler.addSimpleIntervalJob(job);
 
 async function main() {
@@ -47,8 +47,6 @@ async function main() {
         console.log('Twitch API initialized.');
     }
     let game = await leagueApi.getCurrentGame();
-    console.log("Got current game.");
-    console.log("In game: " + game !== null);
     if (game === null && !ingame) { return; }
     if (game !== null && !ingame) {
         console.log("Starting prediction loop.");
@@ -64,7 +62,7 @@ async function main() {
         ingame = false;
         console.log("Starting end prediction loop.");
         let prediction = await twitchApi.getLastPrediction();
-        if (prediction === null || ['RESOLVED', 'CANCELLED']) { return; }
+        if (prediction === null || ['RESOLVED', 'CANCELLED'].includes(prediction.status)) { return; }
         console.log("Getting the winner.");
         let isWinner: boolean = await leagueApi.isWinner();
         console.log("Closing prediction.");

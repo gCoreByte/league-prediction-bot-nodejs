@@ -232,12 +232,13 @@ export class LeagueApi {
     // TODO: this is really REALLY ugly. someone fix this please
     async isWinner(): Promise<boolean> {
         try {
-            let res = await axios.get(createBaseURL(this.server) + "/lol/match/v5/matches/" + this.current_game_id, {
+            // TODO: THIS SHOULD NOT BE HARDCODED
+            let res = await axios.get("https://europe.api.riotgames.com/lol/match/v5/matches/EUN1_" + this.current_game_id, {
                 headers: this.riotHeader()
             });
-            let participants = res.data.participants;
-            let teams = res.data.teams;
-            let winner: string = "";
+            let participants = res.data.info.participants;
+            let teams = res.data.info.teams;
+            let winner: number = 0;
             for (const team of teams) {
                 if (team.win) {
                     winner = team.teamId;
