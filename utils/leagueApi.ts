@@ -175,18 +175,20 @@ export class LeagueApi {
             }
             const error = err as AxiosError;
             if (error.response) {
-                // This should throw an error if the user does not exist.
-                // TODO: handle errors
+                debugger;
+                if (error.response!.status === 401) {
+                    throw new Error("Your API key has expired.");
+                }
                 if (error.response!.status === 404) {
                     throw new Error(`${this.displayname} was not found on ${this.server}.`);
                 }
-                throw new Error(`Error code: ${error.response!.status}. Something went wrong.`)
+                if ([500, 502, 503, 504].includes(error.response!.status)) {
+                    throw new Error("Riot-side API issue. Try again in a while.");
+                }
+                throw new Error(`Error code: ${error.response!.status}. Something went wrong.`);
             } else {
-                console.error("Something went wrong.");
-                console.error("Try checking your connection.");
-                throw error
+                throw new Error("Something went wrong. Try checking your connection.");
             }
-
         }
     }
 
@@ -205,18 +207,23 @@ export class LeagueApi {
             // TODO: better error handling
             if (!axios.isAxiosError(err)) {
                 console.error('Something went wrong. Error dumped.');
-                console.error(err);
                 throw err;
             }
             const error = err as AxiosError;
             if (error.response) {
-                // Handle 404 graciously -> User is not in a game
-                // TODO: handle errors
-                throw err;
+                debugger;
+                if (error.response!.status === 401) {
+                    throw new Error("Your API key has expired.");
+                }
+                if (error.response!.status === 404) {
+                    throw new Error(`${this.displayname} is not in a game.`);
+                }
+                if ([500, 502, 503, 504].includes(error.response!.status)) {
+                    throw new Error("Riot-side API issue. Try again in a while.");
+                }
+                throw new Error(`Error code: ${error.response!.status}. Something went wrong.`);
             } else {
-                console.error("Something went wrong.");
-                console.error("Try checking your connection.");
-                throw err;
+                throw new Error("Something went wrong. Try checking your connection.");
             }
         }
     }
