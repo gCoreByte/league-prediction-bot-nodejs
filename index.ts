@@ -49,7 +49,6 @@ async function main() {
     let game = await leagueApi.getCurrentGame();
     if (game === null && !ingame) { return; }
     if (game !== null && !ingame) {
-        console.log("Starting prediction loop.");
         ingame = true;
         let prediction = await twitchApi.getLastPrediction();
         if (prediction === null || ['ACTIVE', 'LOCKED'].includes(prediction.status)) { return; }
@@ -60,7 +59,6 @@ async function main() {
     if (game !== null && ingame) { return; }
     if (game === null && ingame) {
         ingame = false;
-        console.log("Starting end prediction loop.");
         let prediction = await twitchApi.getLastPrediction();
         if (prediction === null || ['RESOLVED', 'CANCELLED'].includes(prediction.status)) { return; }
         console.log("Getting the winner.");

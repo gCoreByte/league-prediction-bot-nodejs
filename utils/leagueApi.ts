@@ -216,7 +216,7 @@ export class LeagueApi {
                     throw new Error("Your API key has expired.");
                 }
                 if (error.response!.status === 404) {
-                    console.error(`${this.displayname} is not in a game.`);
+                    // console.error(`${this.displayname} is not in a game.`);
                     return null;
                 }
                 if ([500, 502, 503, 504].includes(error.response!.status)) {

@@ -232,7 +232,7 @@ export class TwitchApi {
                 });
         } catch (err) {
             let error = err as AxiosError;
-            throw new Error(`Failed to create prediction with error code: ${error.response!.status}`);
+            throw new Error(`Failed to close prediction with error code: ${error.response!.status}`);
         }
     }
 }
